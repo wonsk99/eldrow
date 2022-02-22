@@ -1,7 +1,8 @@
-# Eldrow: Discord bot for Wordle
+# Eldrow
+Discord bot for Wordle
+
 
 # How it works
-
 1. User inputs command ~eldrow start
 	a. Check if User already has an instance running (return time and end)
 2. Displays 3 messages as one
