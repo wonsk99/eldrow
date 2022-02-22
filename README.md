@@ -4,7 +4,7 @@
 
 1. User inputs command ~eldrow start
 	a. Check if User already has an instance running (return time and end)
-2. Displays 3 messages
+2. Displays 3 messages as one
 	a. Turn number
 	b. The rows
 	c. The keyboard
