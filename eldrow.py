@@ -1,4 +1,4 @@
-## Wordle clone
+## Wordle clone (Fun on the command line!)
 import random
 
 DICT = "complete.txt"
