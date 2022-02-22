@@ -3,9 +3,12 @@
 ## Wordle clone for Discord
 import random
 import discord as disc
+import os
+from dotenv import load_dotenv
 
-# TEMPORARY MOVE SOMEWHERE ELSE
-token = "OTQ1NzM0MzUyMTU3OTMzNTY5.YhUdwA.QCpd89e6ijztVX0FvqVcJrL1pwI"
+# Read in token from env
+load_dotenv()
+token = os.getenv("TOKEN")
 
 ## FUNCTIONS##
 
