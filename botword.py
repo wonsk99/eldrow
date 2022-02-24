@@ -25,12 +25,15 @@ def initGame(gamer):
 	games[gamer]["Yellows"] = set()
 	games[gamer]["Grays"] = set()
 	games[gamer]["State"] = False
+	games[gamer]["footer"] = ""
 
 	return
 
 # Generate a random word to guess
 def genWord():
-	return LISTED[random.randint(0,len(LISTED))].strip().upper()
+	ans = LISTED[random.randint(0,len(LISTED))].strip().upper()
+	print(ans)
+	return ans
 
 # Set remaining letters
 def setrem(target):
@@ -71,6 +74,9 @@ def dispKeys(gamer):
 
 # Print board
 def dispBoard(gamer):
+	# Guesses
+	tWho = "{}'s guesses:\n".format(gamer[0].mention)
+
 	# BOARD
 	ct = 1
 	tBoard = ""
@@ -82,14 +88,18 @@ def dispBoard(gamer):
 		ct += 1
 		tRow += "\n"
 		tBoard += tRow
-	return tBoard
+	return tWho + tBoard + "\n"
 
 # Print function
 def printGame(gamer):
+	tUser = "{}'s game".format(gamer[0].display_name)
 	tBoard = dispBoard(gamer)
 	tKeys = dispKeys(gamer)
-	fullText = tBoard + tKeys
-	return fullText
+	
+	# Create embed
+	e = disc.Embed(title=tUser, description=tBoard+tKeys, color=0x00ff00)
+	e.set_footer(text=games[gamer]["footer"])
+	return e
 
 # Check if letter is in word
 def checkr(letter, rem):
@@ -162,19 +172,25 @@ class Format:
 
 # Args
 eArgs =	'''
-Available commands:
-			-elword start
-			-elword guess <WORD>
-			-elword oops (Use this when the game disappears from your screen)
-Rules:
+Commands:
+			-eldr start
+			-eldr g <WORD>
+			-eldr oops (Use this when the game disappears from your screen)
+
+Keys:
 			**Bolds** are right word in the right spot
 			__Underlines__ are in the word in the wrong spot
 			~~Strikethroughs~~ are not in the word
 '''
+# Create embed
+eAmbed = disc.Embed(title="Rules", description=eArgs, color=0xff002b)
 
 ## GLOBALS ##
 # Running Games
 games = {}
+
+# Running Rules
+rules = {}
 
 # List
 DICT = "complete.txt"
@@ -206,113 +222,192 @@ async def on_ready():
 # When message receive
 @client.event
 async def on_message(message):
-	gamer = message.author
+	gamer = (message.author, message.guild, message.channel)
+	gwhere = (message.guild, message.channel)
 	# Ignore messages from bot itself
-	if gamer == client.user:
+	if gamer[0] == client.user:
 		return
 	
 	# Receive message that begins with eldrow
-	if message.content.startswith('-eldrow'):
+	if message.content.startswith('-eldr'):
 		# Parse message
 		mText = message.content.split()
-		if len(mText) < 2:
-			argMsg = await message.channel.send(eArgs)
-			if gamer in games:
-				delM(gamer, message)
-				delM(gamer, argMsg)
-			return
 
+		if len(mText) < 2:
+			if gamer in games:
+				games[gamer]["footer"] = "Review the rules below!"
+				content = printGame(gamer)
+				games[gamer]["Msg"] = await message.channel.send(embed=content)
+				games[gamer]["footer"] = ""
+				'''
+				delM(gamer, message)
+				for allMsg in games[gamer]["toDel"]:
+					await allMsg.delete()
+					games[gamer]["toDel"] = []
+				'''
+
+			emsg = await message.channel.send(embed=eAmbed)
+			if gwhere in rules:
+				await rules[gwhere].delete()
+			rules[gwhere] = emsg
+
+			return
 		# Game Start
-		if mText[1].lower() == "start":
+		elif mText[1].lower() == "start":
 			# Check if user already has instance of game running
 			if gamer in games:
-				alMsg = await message.channel.send('{}. You already have a game running!'.format(gamer.mention))
-				delM(gamer, message)
-				delM(gamer, alMsg)
+				games[gamer]["footer"] = "You already have a game running!"
+				content = printGame(gamer)
+				games[gamer]["Msg"] = await message.channel.send(embed=content)
+				games[gamer]["footer"] = ""
+
 				return
-			await message.channel.send('{}. You started a game of Eldrow!'.format(gamer.mention))
 
 			# Initialize game
 			initGame(gamer)
+
+			games[gamer]["footer"] = '{}. You started a game of Eldrow!'.format(gamer[0].display_name)
 			content = printGame(gamer)
-			gamemsg = await message.channel.send("{}'s Game\n{}".format(gamer.mention, content))
-			games[gamer]["Msg"] = gamemsg
+			games[gamer]["Msg"] = await message.channel.send(embed=content)
+			games[gamer]["footer"] = ""
+			
+			'''
+			delM(gamer, message)
+			for allMsg in games[gamer]["toDel"]:
+				await allMsg.delete()
+			games[gamer]["toDel"] = []
+			'''
 
-
-			print(games[gamer]["answer"])
 			return
 
 		# Guess word
-		elif mText[1].lower() == "guess":
+		elif mText[1].lower() == "g":
+			# Initialize game if no game yet
+			if gamer not in games:
+				initGame(gamer)
+
 			# Make sure there is a guess
 			if len(mText) < 3:
-				reMsg = await message.channel.send('-eldrow guess <WORD>')
+				games[gamer]["footer"] = '-eldr g <WORD>'
+				content = printGame(gamer)
+				games[gamer]["Msg"] = await message.channel.send(embed=content)
+				games[gamer]["footer"] = ""
+			
+				'''	
 				delM(gamer, message)
+
+				# Delete messages
+				for allMsg in games[gamer]["toDel"]:
+					await allMsg.delete()
+				games[gamer]["toDel"] = []
+
 				delM(gamer, reMsg)
+				'''
+
 				return
 
 			# Make sure word is valid
 			if not checkvalid(mText[2]):
-				reMsg = await message.channel.send('Guess is invalid')
+				games[gamer]["footer"] = 'Guess "{}" is invalid'.format(mText[2])
+				content = printGame(gamer)
+				games[gamer]["Msg"] = await message.channel.send(embed=content)
+				games[gamer]["footer"] = ""
+			
+				'''	
 				delM(gamer, message)
+
+				# Delete messages
+				for allMsg in games[gamer]["toDel"]:
+					await allMsg.delete()
+				games[gamer]["toDel"] = []
+
 				delM(gamer, reMsg)
+				'''
 				return
 
-			# Initialize game if no game yet
-			if gamer not in games:
-				await message.channel.send('{}. You started a game of Eldrow!'.format(gamer.mention))
-				
-				initGame(gamer)
-				content = printGame(gamer)
-				gamemsg = await message.channel.send("{}'s Game\n{}".format(gamer.mention, content))
-				games[gamer]["Msg"] = gamemsg
+		
 
 			tGuess = mText[2]
 			# Go through the game
 			eLogic(gamer, tGuess)
-
-			edMsg = await games[gamer]["Msg"].edit(content=printGame(gamer))
+			
+			'''
 			delM(gamer, message)
-
-			games[gamer]["turn"] += 1
-
+			delM(gamer, games[gamer]["Msg"])
+			# Delete messages
 			for allMsg in games[gamer]["toDel"]:
 				await allMsg.delete()
 			games[gamer]["toDel"] = []
-			
+			'''
+
+			# edMsg = await games[gamer]["Msg"].edit(content=printGame(gamer))
+
+			games[gamer]["turn"] += 1
+
 			# If game is at last turn OR if game is at win, End (remove from dict)
+			finito = True
 			if games[gamer]["State"]:
-				await message.channel.send('Congratulations {}. You got the word!'.format(gamer.mention))
-				del games[gamer]
-			if games[gamer]["turn"] == 7:
-				await message.channel.send('Sorry {}. The word was {}'.format(gamer.mention, games[gamer]["answer"]))
+				games[gamer]["footer"] = 'WOOOOOT!'
+				await message.channel.send('Congratulations {}. You got the word! ({}/6)'.format(gamer[0].mention,str(games[gamer]["turn"]-1)))
+			elif games[gamer]["turn"] == 7:
+				games[gamer]["footer"] = '*sad emoji noises*'
+				await message.channel.send('Sorry {}. The word was {}. ({}/6)'.format(gamer[0].mention, games[gamer]["answer"],str(games[gamer]["turn"]-1)))
+			else:
+				finito = False
+			
+			content = printGame(gamer)
+			games[gamer]["Msg"] = await message.channel.send(embed=content)
+			games[gamer]["footer"] = ""
+				
+			if finito:
 				del games[gamer]
 
-			print(games[gamer]["Greens"])
-			
 			return
 
 		# Oops command
 		elif mText[1].lower() == "oops":
 			if gamer in games:
+				'''
 				delM(gamer, message)
 				delM(gamer, games[gamer]["Msg"])
-				gamemsg = await message.channel.send(games[gamer]["Msg"].content)
-				games[gamer]["Msg"] = gamemsg
+				'''
+				games[gamer]["footer"] = 'Here ya go!'
+				content = printGame(gamer)
+				games[gamer]["Msg"] = await message.channel.send(embed=content)
+				games[gamer]["footer"] = ""
+				
+				'''
+				# Delete messages
 				for allMsg in games[gamer]["toDel"]:
 					await allMsg.delete()
 				games[gamer]["toDel"] = []
-				return
+				'''
+			else:
+				await message.channel.send('Use command "-eldr start" to begin a game!')
+
+			return
 
 		# Send args
 		else:
-			esMsg = await message.channel.send(eArgs)
 			if gamer in games:
+				games[gamer]["footer"] = "Review the rules below!"
+				content = printGame(gamer)
+				games[gamer]["Msg"] = await message.channel.send(embed=content)
+				games[gamer]["footer"] = ""
+				'''
 				delM(gamer, message)
-				delM(gamer, esMsg)
+				for allMsg in games[gamer]["toDel"]:
+					await allMsg.delete()
+					games[gamer]["toDel"] = []
+				'''
+
+			emsg = await message.channel.send(embed=eAmbed)
+			if gwhere in rules:
+				await rules[gwhere].delete()
+			rules[gwhere] = emsg
+
 			return
-
-
+			
 client.run(token)
 
 ## END Disc Client ##
