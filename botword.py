@@ -46,7 +46,8 @@ def setrem(target):
 
 # Delete a message
 def delM(gamer, m):
-	games[gamer]["toDel"].append(m)
+	if isinstance(m, disc.message.Message):
+		games[gamer]["toDel"].append(m)
 	return
 
 # Format letter
@@ -233,18 +234,23 @@ async def on_message(message):
 		# Parse message
 		mText = message.content.split()
 
+		if mText[0] != "-eldr":
+			return
+
 		if len(mText) < 2:
 			if gamer in games:
+				# TODO Delete "-eldr"
+				delM(gamer, message)
+				delM(gamer, games[gamer]["Msg"])
+
 				games[gamer]["footer"] = "Review the rules below!"
 				content = printGame(gamer)
 				games[gamer]["Msg"] = await message.channel.send(embed=content)
 				games[gamer]["footer"] = ""
-				'''
-				delM(gamer, message)
+
 				for allMsg in games[gamer]["toDel"]:
 					await allMsg.delete()
-					games[gamer]["toDel"] = []
-				'''
+				games[gamer]["toDel"] = []
 
 			emsg = await message.channel.send(embed=eAmbed)
 			if gwhere in rules:
@@ -264,19 +270,19 @@ async def on_message(message):
 				return
 
 			# Initialize game
+			iGame = await message.channel.send("{} started a game at {}".format(gamer[0].mention, "TIME"))
 			initGame(gamer)
 
-			games[gamer]["footer"] = '{}. You started a game of Eldrow!'.format(gamer[0].display_name)
+			games[gamer]["footer"] = 'You started a game of Eldrow!'
 			content = printGame(gamer)
 			games[gamer]["Msg"] = await message.channel.send(embed=content)
 			games[gamer]["footer"] = ""
 			
-			'''
+			# TODO Delete "-eldr start"
 			delM(gamer, message)
 			for allMsg in games[gamer]["toDel"]:
 				await allMsg.delete()
 			games[gamer]["toDel"] = []
-			'''
 
 			return
 
@@ -284,6 +290,7 @@ async def on_message(message):
 		elif mText[1].lower() == "g":
 			# Initialize game if no game yet
 			if gamer not in games:
+				iGame = await message.channel.send("{} started a game at {}".format(gamer[0].mention, "TIME"))
 				initGame(gamer)
 
 			# Make sure there is a guess
@@ -293,36 +300,33 @@ async def on_message(message):
 				games[gamer]["Msg"] = await message.channel.send(embed=content)
 				games[gamer]["footer"] = ""
 			
-				'''	
+				# TODO Delete "-eldr g BLANK"
 				delM(gamer, message)
 
 				# Delete messages
 				for allMsg in games[gamer]["toDel"]:
 					await allMsg.delete()
 				games[gamer]["toDel"] = []
-
-				delM(gamer, reMsg)
-				'''
 
 				return
 
 			# Make sure word is valid
 			if not checkvalid(mText[2]):
+				# TODO Delete "-eldr g BAD_GUESS"
+				delM(gamer, message)
+				delM(gamer, games[gamer]["Msg"])
+
 				games[gamer]["footer"] = 'Guess "{}" is invalid'.format(mText[2])
 				content = printGame(gamer)
 				games[gamer]["Msg"] = await message.channel.send(embed=content)
 				games[gamer]["footer"] = ""
-			
-				'''	
-				delM(gamer, message)
+
 
 				# Delete messages
 				for allMsg in games[gamer]["toDel"]:
 					await allMsg.delete()
 				games[gamer]["toDel"] = []
 
-				delM(gamer, reMsg)
-				'''
 				return
 
 		
@@ -331,14 +335,14 @@ async def on_message(message):
 			# Go through the game
 			eLogic(gamer, tGuess)
 			
-			'''
+			# TODO Delete "-eldr g WORD" and Old Game Msg
 			delM(gamer, message)
 			delM(gamer, games[gamer]["Msg"])
+
 			# Delete messages
 			for allMsg in games[gamer]["toDel"]:
 				await allMsg.delete()
 			games[gamer]["toDel"] = []
-			'''
 
 			# edMsg = await games[gamer]["Msg"].edit(content=printGame(gamer))
 
@@ -346,12 +350,13 @@ async def on_message(message):
 
 			# If game is at last turn OR if game is at win, End (remove from dict)
 			finito = True
+			gameOver = ""
 			if games[gamer]["State"]:
 				games[gamer]["footer"] = 'WOOOOOT!'
-				await message.channel.send('Congratulations {}. You got the word! ({}/6)'.format(gamer[0].mention,str(games[gamer]["turn"]-1)))
+				gameOver = 'Congratulations {}. You got the word! ({}/6)'.format(gamer[0].mention,str(games[gamer]["turn"]-1))
 			elif games[gamer]["turn"] == 7:
 				games[gamer]["footer"] = '*sad emoji noises*'
-				await message.channel.send('Sorry {}. The word was {}. ({}/6)'.format(gamer[0].mention, games[gamer]["answer"],str(games[gamer]["turn"]-1)))
+				gameOver = 'Sorry {}. The word was {}. ({}/6)'.format(gamer[0].mention, games[gamer]["answer"],str(games[gamer]["turn"]-1))
 			else:
 				finito = False
 			
@@ -360,6 +365,7 @@ async def on_message(message):
 			games[gamer]["footer"] = ""
 				
 			if finito:
+				await message.channel.send(gameOver)
 				del games[gamer]
 
 			return
@@ -367,21 +373,22 @@ async def on_message(message):
 		# Oops command
 		elif mText[1].lower() == "oops":
 			if gamer in games:
-				'''
+			
+				# TODO Delete "-eldr oops" and Old Game Msg
 				delM(gamer, message)
 				delM(gamer, games[gamer]["Msg"])
-				'''
+
 				games[gamer]["footer"] = 'Here ya go!'
 				content = printGame(gamer)
 				games[gamer]["Msg"] = await message.channel.send(embed=content)
 				games[gamer]["footer"] = ""
 				
-				'''
+				# TODO
 				# Delete messages
 				for allMsg in games[gamer]["toDel"]:
 					await allMsg.delete()
 				games[gamer]["toDel"] = []
-				'''
+			
 			else:
 				await message.channel.send('Use command "-eldr start" to begin a game!')
 
@@ -390,16 +397,16 @@ async def on_message(message):
 		# Send args
 		else:
 			if gamer in games:
-				games[gamer]["footer"] = "Review the rules below!"
+				games[gamer]["footer"] = '"{}" is not a command. Review below!'.format(message.content.split()[1])
 				content = printGame(gamer)
 				games[gamer]["Msg"] = await message.channel.send(embed=content)
 				games[gamer]["footer"] = ""
-				'''
+				
+				# TODO Delete "-eldr" for no gamers
 				delM(gamer, message)
 				for allMsg in games[gamer]["toDel"]:
 					await allMsg.delete()
 					games[gamer]["toDel"] = []
-				'''
 
 			emsg = await message.channel.send(embed=eAmbed)
 			if gwhere in rules:
