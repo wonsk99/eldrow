@@ -3,13 +3,13 @@ Discord bot for Wordle
 
 
 # How it works
-1. User inputs command ~eldrow start
+1. User inputs command -eldrow start\n
 	a. Check if User already has an instance running (return time and end)
 2. Displays 3 messages as one
 	a. Turn number
 	b. The rows
 	c. The keyboard
-3. User inputs command ~eldrow guess "five letter word"
+3. User inputs command -eldrow guess "five letter word"
   a. Check if User inputs a valid word
     i. If invalid, replace "Turn number" with "Turn #: "WORD" is invalid!
     ii. If valid, replace "Turn number" with Turn #
