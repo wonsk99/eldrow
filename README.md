@@ -1,6 +1,9 @@
 # Eldrow
 Discord bot for Wordle
 
+# TODO
+1. Track scores/stats
+2. Enable HARD mode
 
 # How it works
 1. User inputs command -eldrow start
