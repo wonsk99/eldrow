@@ -47,7 +47,6 @@ class Board:
     ### START
     def new_game_word(self):
         ans = LIST_DICT[random.randint(0,len(LIST_DICT))].strip().upper()
-        ans = "TWIRL"
         return ans
 
     async def start_game(self, interaction):
