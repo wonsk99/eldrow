@@ -15,13 +15,14 @@ client = discord.Client(intents=discord.Intents.all())
 
 # Globals
 GAMERS = {}
-SERVER_ID = 866838236658794507
-# SERVER_ID = 711077719944724541
-GUILD = discord.Object(id=SERVER_ID)
+MAIN_SERVER_ID = 866838236658794507
+MAIN_GUILD = discord.Object(id=MAIN_SERVER_ID)
+servers = [866838236658794507, 800914273781022761, 946143984340836353, 711077719944724541] # Mine, Mine, Ours, Friends
+GUILDS = [discord.Object(id=server) for server in servers]
 
 # COMMANDS
 tree = discord.app_commands.CommandTree(client)
-@tree.command(name="start", description="Start a new game of Wordle", guild=GUILD)
+@tree.command(name="start", description="Start a new game of Wordle", guild=MAIN_GUILD)
 async def start(interaction: discord.Interaction):
     gamer = interaction.user
     if gamer in GAMERS:
@@ -34,7 +35,7 @@ async def start(interaction: discord.Interaction):
 
     await board.start_game(interaction)
 
-@tree.command(name="guess", description="Guess your next Word", guild=GUILD)
+@tree.command(name="guess", description="Guess your next Word", guild=MAIN_GUILD)
 async def guess(interaction: discord.Interaction, word: str):
     gamer = interaction.user
 
@@ -49,8 +50,12 @@ async def guess(interaction: discord.Interaction, word: str):
     if finito:
         del GAMERS[gamer]
 
-# @tree.command(name="stats", description="View your stats", guild=GUILD)
+# @tree.command(name="stats", description="View your stats", guild=MAIN_GUILD)
 # async def stats(interaction: discord.Interaction):
+#     await interaction.response.send_message("Stats for " + interaction.user.mention)
+
+# @tree.command(name="mode", description="Swap to easy/hard", guild=MAIN_GUILD)
+# async def stats(interaction: discord.Interaction, mode: str):
 #     await interaction.response.send_message("Stats for " + interaction.user.mention)
 
 import json
@@ -72,8 +77,14 @@ async def convert_emoji():
 async def on_ready():
     await convert_emoji()
     print('Logged in as {0.user}'.format(client))
-    syncd = await tree.sync(guild=GUILD)
-    print(syncd)
+
+    # Main guild syncs
+    for guild in GUILDS:
+        syncd = await tree.sync(guild=guild)
+        print(syncd)
+
+    # Global sync
+    await tree.sync()
 
 if __name__ == "__main__":
     client.run(token)
